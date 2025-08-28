@@ -14,16 +14,18 @@ const App = () => {
   return (
     <div className="relative min-h-screen bg-[#0a0f1a] text-white">
       <AnimatedBackground />
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/portfolio" element={<PortfolioPage />} />
-        <Route path="/clients" element={<ClientWorkPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/:id" element={<BlogDetailPage />} />
-      </Routes>
-      <Footer />
+      <div className="relative z-10">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/clients" element={<ClientWorkPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogDetailPage />} />
+        </Routes>
+        <Footer />
+      </div>
     </div>
   )
 }
