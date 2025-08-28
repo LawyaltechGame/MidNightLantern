@@ -1,4 +1,4 @@
-import { FaGamepad, FaBlog, FaCrown, FaHome, FaServicestack, FaProjectDiagram } from "react-icons/fa";
+import { FaBlog, FaCrown, FaHome, FaServicestack, FaProjectDiagram } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -25,7 +25,11 @@ const Navbar = () => {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <FaGamepad className="text-2xl text-cyan-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.7)]" />
+              <img
+                src="/Logo For GameForge.jpeg"
+                alt="GameForge logo"
+                className="h-8 w-8 object-cover rounded drop-shadow-[0_0_12px_rgba(56,189,248,0.7)]"
+              />
               <Link to="/">
                 <span>
                   <span className="text-cyan-400">Game</span>
