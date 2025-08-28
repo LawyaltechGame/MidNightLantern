@@ -27,13 +27,12 @@ const Navbar = () => {
             >
               <img
                 src="/Logo For GameForge.jpeg"
-                alt="GameForge logo"
+                alt="Midnight Lantern logo"
                 className="h-8 w-8 object-cover rounded drop-shadow-[0_0_12px_rgba(56,189,248,0.7)]"
               />
               <Link to="/">
-                <span>
-                  <span className="text-cyan-400">Game</span>
-                  <span className="text-fuchsia-400">Forge</span>
+                <span className="uppercase bg-gradient-to-r from-cyan-300 via-amber-300 to-fuchsia-300 bg-clip-text text-transparent tracking-[0.2em] drop-shadow-[0_0_10px_rgba(251,191,36,0.35)]">
+                  MIDNIGHT LANTERN
                 </span>
               </Link>
             </motion.span>

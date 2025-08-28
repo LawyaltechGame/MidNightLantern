@@ -1,17 +1,6 @@
 import { motion } from "framer-motion";
 import { FaArrowRight } from "react-icons/fa";
 
-const TitleWord = ({ children, delay = 0 }: { children: string; delay?: number }) => (
-  <motion.span
-    className="inline-block bg-gradient-to-br from-cyan-400 to-fuchsia-400 bg-clip-text text-transparent drop-shadow"
-    initial={{ y: 30, opacity: 0, scale: 0.98 }}
-    animate={{ y: 0, opacity: 1, scale: 1 }}
-    transition={{ delay, duration: 0.6, ease: "easeOut" }}
-  >
-    {children}
-  </motion.span>
-);
-
 const PillButton = ({ children }: { children: React.ReactNode }) => (
   <motion.button
     whileHover={{ y: -2, boxShadow: "0 0 24px rgba(56,189,248,0.6)" }}
@@ -27,10 +16,18 @@ const Hero = () => {
   return (
     <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 md:pt-28">
       <div className="text-center">
-        <h1 className="text-[48px] leading-[1.05] font-extrabold tracking-widest md:text-[96px]">
-          <TitleWord delay={0.1}>GAME</TitleWord>{" "}
-          <TitleWord delay={0.3}>FORGE</TitleWord>
-        </h1>
+        <motion.div
+          className="flex justify-center"
+          initial={{ y: 30, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+        >
+          <img
+            src="/Logo For GameForge.jpeg"
+            alt="Midnight Lantern logo"
+            className="w-[520px] md:w-[800px] h-[110px] md:h-[250px]   max-w-full object-contain drop-shadow-[0_0_18px_rgba(56,189,248,0.45)]"
+          />
+        </motion.div>
 
         <motion.p
           className="mx-auto mt-6 max-w-3xl text-base text-slate-300 md:text-lg"
