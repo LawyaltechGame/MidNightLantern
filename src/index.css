@@ -1,4 +1,24 @@
+/* src/index.css (example) */
 @import "tailwindcss";
+
+/* Enable the prose utilities */
+@plugin "@tailwindcss/typography";
+
+/* Optional: match WP alignment/util classes */
+.prose :where(.aligncenter){ margin-left:auto; margin-right:auto; text-align:center; }
+.prose :where(.alignright){ float:right; margin-left:1rem; }
+.prose :where(.alignleft){ float:left; margin-right:1rem; }
+.prose :where(figure){ margin: 1.25em 0; }
+.prose :where(figcaption){ font-size:.875em; opacity:.8; }
+
+/* Make embeds/images behave nicely */
+.prose iframe{ width:100%; aspect-ratio:16/9; }
+.prose img{ height:auto; }
+
+/* If your site is dark by default, ensure links & headings pop */
+.dark .prose a{ text-decoration:none; }
+.dark .prose a:hover{ text-decoration:underline; }
+
 
 :root {
   --bg: #0a0f1a;
