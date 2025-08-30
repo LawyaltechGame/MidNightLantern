@@ -19,7 +19,7 @@ const FALLBACK_THUMB = "https://firstsiteguide.com/wp-content/uploads/2021/06/be
 export function getFeaturedImage(p: WpPost): { src: string; alt: string } {
   const media = p?._embedded?.["wp:featuredmedia"]?.[0];
   let src = media?.source_url || "";
-  let alt = media?.alt_text || p?.title?.rendered || "Featured image";
+  const alt = media?.alt_text || p?.title?.rendered || "Featured image";
 
   if (!src) {
     // Fallback: find first image in content HTML

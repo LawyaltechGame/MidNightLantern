@@ -5,7 +5,7 @@ type Service = {
   title: string;
   description: string;
   points: string[];
-  icon: any;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   hue: number;
 };
 
@@ -84,7 +84,7 @@ const ServiceCard = ({ service, index }: { service: Service; index: number }) =>
   );
 };
 
-const HelpCard = ({ title, text, icon: Icon, hue }: { title: string; text: string; icon: any; hue: number }) => (
+const HelpCard = ({ title, text, icon: Icon, hue }: { title: string; text: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; hue: number }) => (
   <motion.div
     className="rounded-3xl border border-white/10 bg-slate-900/60 p-8 backdrop-blur-xl"
     initial={{ opacity: 0, y: 16 }}

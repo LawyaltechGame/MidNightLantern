@@ -2,7 +2,7 @@ import { FaBlog, FaCrown, FaHome, FaServicestack, FaProjectDiagram } from "react
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: string }) => (
+const NavItem = ({ icon: Icon, label, to }: { icon: React.ComponentType<{ className?: string }>; label: string; to: string }) => (
   <motion.span
     whileHover={{ y: -2, textShadow: "0 0 12px rgba(80,200,255,0.9)" }}
     className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-200/90 hover:text-cyan-300 transition-colors"

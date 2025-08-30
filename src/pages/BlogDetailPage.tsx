@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchPostBySlug, getFeaturedImage, formatDate } from "../lib/wp";
+import CommentSection from "../components/CommentSection";
 import type { WpPost } from "../lib/wp";
 
 const BlogDetailPage = () => {
@@ -58,6 +59,8 @@ const BlogDetailPage = () => {
 
 
       <Link to="/blog" className="mt-8 inline-block rounded-full border border-white/20 px-5 py-2 text-slate-200 hover:text-cyan-300">← Back to Blog</Link>
+      
+      <CommentSection postSlug={slug || ""} />
     </div>
   );
 };
