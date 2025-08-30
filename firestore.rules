@@ -14,7 +14,7 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.token.email == resource.data.authorEmail;
     }
     
-    // Allow authenticated users to read and write post reactions
+    // Allow authenticated users to read and write post reactions (likes only)
     match /postReactions/{document} {
       allow read: if true;
       allow create, update: if request.auth != null;

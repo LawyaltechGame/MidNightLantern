@@ -3,12 +3,27 @@ import { useParams, Link } from "react-router-dom";
 import { fetchPostBySlug, getFeaturedImage, formatDate } from "../lib/wp";
 import CommentSection from "../components/CommentSection";
 import type { WpPost } from "../lib/wp";
+import { FaThumbsUp } from "react-icons/fa";
+import { auth, db } from "../lib/firebase";
+import { doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 const BlogDetailPage = () => {
   const { slug } = useParams();
   const [post, setPost] = useState<WpPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [likes, setLikes] = useState(0);
+  const [userReaction, setUserReaction] = useState<'like' | null>(null);
+
+  // Authentication effect
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -20,6 +35,63 @@ const BlogDetailPage = () => {
       .finally(() => { if (isMounted) setLoading(false); });
     return () => { isMounted = false };
   }, [slug]);
+
+  // Load reactions for the current post
+  useEffect(() => {
+    if (!post) return;
+    
+    const postRef = doc(db, "postReactions", post.id.toString());
+    const unsubscribe = onSnapshot(postRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setLikes(data.likes || 0);
+        setUserReaction(user && data.userReactions?.[user.uid] === 'like' ? 'like' : null);
+      } else {
+        // Document was deleted, reset to default state
+        setLikes(0);
+        setUserReaction(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [post, user]);
+
+  const handleLike = async () => {
+    if (!user || !post) return;
+    
+    const postRef = doc(db, "postReactions", post.id.toString());
+    const currentReaction = userReaction;
+    
+    try {
+      if (currentReaction === 'like') {
+        // Remove like - delete the entire document
+        // Optimistic update: immediately remove like
+        setLikes(prev => Math.max(0, prev - 1));
+        setUserReaction(null);
+        await deleteDoc(postRef);
+      } else {
+        // Add like
+        const newLikes = likes + 1;
+        
+        // Optimistic update: immediately add like
+        setLikes(newLikes);
+        setUserReaction('like');
+        
+        const newData = {
+          likes: newLikes,
+          userReactions: {
+            [user.uid]: 'like'
+          }
+        };
+        await setDoc(postRef, newData, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error updating like:", error);
+      // Revert optimistic update on error
+      // The onSnapshot listener will sync the correct state
+    }
+  };
+
 
   if (loading) {
     return <div className="mx-auto max-w-3xl px-4 py-16 text-slate-300">Loading...</div>;
@@ -58,7 +130,38 @@ const BlogDetailPage = () => {
 />
 
 
-      <Link to="/blog" className="mt-8 inline-block rounded-full border border-white/20 px-5 py-2 text-slate-200 hover:text-cyan-300">← Back to Blog</Link>
+      <div className="mt-8 flex items-center justify-between">
+        <Link to="/blog" className="inline-block rounded-full border border-white/20 px-5 py-2 text-slate-200 hover:text-cyan-300">← Back to Blog</Link>
+        
+        <div className="flex items-center gap-3">
+          {/* Sign out button
+          {user && (
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-full transition-colors"
+              title="Sign out"
+            >
+              <FaSignOutAlt className="w-3 h-3" />
+              Sign Out
+            </button>
+          )}
+           */}
+          {/* Like button */}
+          <button
+            onClick={handleLike}
+            disabled={!user}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              userReaction === 'like'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-600/30'
+            } ${!user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+            title={user ? (userReaction === 'like' ? 'Click to unlike' : 'Like this post') : 'Sign in to like'}
+          >
+            <FaThumbsUp className={`w-4 h-4 ${userReaction === 'like' ? 'text-green-400' : ''}`} />
+            <span>{likes}</span>
+          </button>
+        </div>
+      </div>
       
       <CommentSection postSlug={slug || ""} />
     </div>

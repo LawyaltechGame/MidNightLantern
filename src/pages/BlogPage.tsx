@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaNewspaper, FaBookOpen, FaComments, FaBroadcastTower, FaArrowRight, FaThumbsUp, FaThumbsDown, FaEnvelope, FaLock, FaSignOutAlt, FaUser } from "react-icons/fa";
+import { FaNewspaper, FaBookOpen, FaComments, FaBroadcastTower, FaArrowRight, FaThumbsUp, FaEnvelope, FaLock, FaSignOutAlt, FaUser } from "react-icons/fa";
 import { fetchPosts, getFeaturedImage, formatDate } from "../lib/wp";
 import type { WpPost } from "../lib/wp";
 import { auth, db } from "../lib/firebase";
@@ -31,16 +31,14 @@ const FilterPill = ({ icon: Icon, label, active }: { icon: React.ComponentType<{
   </motion.button>
 );
 
-const BlogCard = ({ post, index, user, onLike, onDislike, likes, dislikes, userReaction, postReactions }: { 
+const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReactions }: { 
   post: WpPost; 
   index: number;
   user: User | null;
   onLike: (postId: number) => void;
-  onDislike: (postId: number) => void;
   likes: number;
-  dislikes: number;
-  userReaction: 'like' | 'dislike' | null;
-  postReactions: Record<number, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }>;
+  userReaction: 'like' | null;
+  postReactions: Record<number, { likes: number; userReaction: 'like' | null }>;
 }) => (
   <motion.article
     className="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-md"
@@ -62,10 +60,10 @@ const BlogCard = ({ post, index, user, onLike, onDislike, likes, dislikes, userR
       <div className="flex items-center justify-between">
         <div className="text-xs text-slate-400">{formatDate(post.date)}</div>
         <div className="text-xs text-slate-500">
-          {((postReactions[post.id]?.likes || 0) + (postReactions[post.id]?.dislikes || 0)) > 0 && (
+          {(postReactions[post.id]?.likes || 0) > 0 && (
             <span className="flex items-center gap-1">
               <span>🔥</span>
-              <span>{(postReactions[post.id]?.likes || 0) + (postReactions[post.id]?.dislikes || 0)}</span>
+              <span>{postReactions[post.id]?.likes || 0}</span>
             </span>
           )}
         </div>
@@ -73,7 +71,7 @@ const BlogCard = ({ post, index, user, onLike, onDislike, likes, dislikes, userR
       <h3 className="mt-3 text-xl font-extrabold leading-tight tracking-wide text-slate-100" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
       <div className="mt-3 text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
       
-      {/* Like/Dislike Section */}
+      {/* Like Section */}
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -88,20 +86,6 @@ const BlogCard = ({ post, index, user, onLike, onDislike, likes, dislikes, userR
           >
             <FaThumbsUp className={`w-3.5 h-3.5 ${userReaction === 'like' ? 'text-green-400' : ''}`} />
             <span>{likes}</span>
-          </button>
-          
-          <button
-            onClick={() => user ? onDislike(post.id) : null}
-            disabled={!user}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              userReaction === 'dislike'
-                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-600/30'
-            } ${!user ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
-                         title={user ? (userReaction === 'dislike' ? 'Click to undislike' : 'Dislike this post') : 'Sign in to dislike'}
-          >
-            <FaThumbsDown className={`w-3.5 h-3.5 ${userReaction === 'dislike' ? 'text-red-400' : ''}`} />
-            <span>{dislikes}</span>
           </button>
         </div>
         
@@ -127,7 +111,7 @@ const BlogPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [postReactions, setPostReactions] = useState<Record<number, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }>>({});
+  const [postReactions, setPostReactions] = useState<Record<number, { likes: number; userReaction: 'like' | null }>>({});
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
@@ -171,9 +155,9 @@ const BlogPage = () => {
     if (!posts.length) return;
     
     // Initialize default reactions for all posts
-    const initialReactions: Record<number, { likes: number; dislikes: number; userReaction: 'like' | 'dislike' | null }> = {};
+    const initialReactions: Record<number, { likes: number; userReaction: 'like' | null }> = {};
     posts.forEach(post => {
-      initialReactions[post.id] = { likes: 0, dislikes: 0, userReaction: null };
+      initialReactions[post.id] = { likes: 0, userReaction: null };
     });
     setPostReactions(initialReactions);
     
@@ -186,8 +170,7 @@ const BlogPage = () => {
              ...prev,
              [post.id]: {
                likes: data.likes || 0,
-               dislikes: data.dislikes || 0,
-               userReaction: user && data.userReactions?.[user.uid] || null
+               userReaction: user && data.userReactions?.[user.uid] === 'like' ? 'like' : null
              }
            }));
          } else {
@@ -196,7 +179,6 @@ const BlogPage = () => {
              ...prev,
              [post.id]: {
                likes: 0,
-               dislikes: 0,
                userReaction: null
              }
            }));
@@ -229,9 +211,8 @@ const BlogPage = () => {
         }));
         await deleteDoc(postRef);
       } else {
-        // Add like or switch from dislike
+        // Add like
         const newLikes = (postReactions[postId]?.likes || 0) + 1;
-        const newDislikes = currentReaction === 'dislike' ? Math.max(0, (postReactions[postId]?.dislikes || 1) - 1) : (postReactions[postId]?.dislikes || 0);
         
         // Optimistic update: immediately add like
         setPostReactions(prev => ({
@@ -239,14 +220,12 @@ const BlogPage = () => {
           [postId]: {
             ...prev[postId],
             likes: newLikes,
-            dislikes: newDislikes,
             userReaction: 'like'
           }
         }));
         
         const newData = {
           likes: newLikes,
-          dislikes: newDislikes,
           userReactions: {
             [user.uid]: 'like'
           }
@@ -255,57 +234,6 @@ const BlogPage = () => {
       }
     } catch (error) {
       console.error("Error updating like:", error);
-      // Revert optimistic update on error
-      // The onSnapshot listener will sync the correct state
-    }
-  };
-
-  const handleDislike = async (postId: number) => {
-    if (!user) return;
-    
-    const postRef = doc(db, "postReactions", postId.toString());
-    const currentReaction = postReactions[postId]?.userReaction;
-    
-    try {
-      if (currentReaction === 'dislike') {
-        // Remove dislike - delete the entire document
-        // Optimistic update: immediately remove dislike
-        setPostReactions(prev => ({
-          ...prev,
-          [postId]: {
-            ...prev[postId],
-            dislikes: Math.max(0, (prev[postId]?.dislikes || 1) - 1),
-            userReaction: null
-          }
-        }));
-        await deleteDoc(postRef);
-      } else {
-        // Add dislike or switch from like
-        const newLikes = currentReaction === 'like' ? Math.max(0, (postReactions[postId]?.likes || 1) - 1) : (postReactions[postId]?.likes || 0);
-        const newDislikes = (postReactions[postId]?.dislikes || 0) + 1;
-        
-        // Optimistic update: immediately add dislike
-        setPostReactions(prev => ({
-          ...prev,
-          [postId]: {
-            ...prev[postId],
-            likes: newLikes,
-            dislikes: newDislikes,
-            userReaction: 'dislike'
-          }
-        }));
-        
-        const newData = {
-          likes: newLikes,
-          dislikes: newDislikes,
-          userReactions: {
-            [user.uid]: 'dislike'
-          }
-        };
-        await setDoc(postRef, newData, { merge: true });
-      }
-    } catch (error) {
-      console.error("Error updating dislike:", error);
       // Revert optimistic update on error
       // The onSnapshot listener will sync the correct state
     }
@@ -431,9 +359,7 @@ const BlogPage = () => {
                     index={i}
                     user={user}
                     onLike={handleLike}
-                    onDislike={handleDislike}
                     likes={postReactions[post.id]?.likes || 0}
-                    dislikes={postReactions[post.id]?.dislikes || 0}
                     userReaction={postReactions[post.id]?.userReaction || null}
                     postReactions={postReactions}
                   />
