@@ -57,17 +57,25 @@ const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReaction
       </div>
     </div>
     <div className="p-6">
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-slate-400">{formatDate(post.date)}</div>
-        <div className="text-xs text-slate-500">
-          {(postReactions[post.id]?.likes || 0) > 0 && (
-            <span className="flex items-center gap-1">
-              <span>🔥</span>
-              <span>{postReactions[post.id]?.likes || 0}</span>
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="flex items-center justify-between">
+  <div className="flex flex-col">
+    <span className="text-xs text-slate-400">{formatDate(post.date)}</span>
+    {post._embedded?.author?.[0] && (
+      <span className="text-sm text-blue-500 mt-1">
+        By {post._embedded.author[0].name}
+      </span>
+    )}
+  </div>
+
+  <div className="text-xs text-slate-500">
+    {(postReactions[post.id]?.likes || 0) > 0 && (
+      <span className="flex items-center gap-1">
+        <span>🔥</span>
+        <span>{postReactions[post.id]?.likes || 0}</span>
+      </span>
+    )}
+  </div>
+</div>
       <h3 className="mt-3 text-xl font-extrabold leading-tight tracking-wide text-slate-100" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
       <div className="mt-3 text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
       

@@ -130,23 +130,33 @@ const BlogDetailPage = () => {
 />
 
 
+{/* Author bio section */}
+{post._embedded?.author?.[0] && (
+  <div className="mt-12 flex items-start gap-4 p-6 bg-slate-900/40 rounded-2xl border border-white/10">
+    <img
+      src={post._embedded.author[0].avatar_urls?.["96"]}
+      alt={post._embedded.author[0].name}
+      className="w-16 h-16 rounded-full border border-slate-700 object-cover"
+    />
+    <div>
+      <h3 className="text-lg font-semibold text-slate-100">
+        {post._embedded.author[0].name}
+      </h3>
+      {post._embedded.author[0].description && (
+        <p className="text-sm text-slate-400 mt-1">
+          {post._embedded.author[0].description}
+        </p>
+      )}
+    </div>
+  </div>
+)}
+
+
+
       <div className="mt-8 flex items-center justify-between">
         <Link to="/blog" className="inline-block rounded-full border border-white/20 px-5 py-2 text-slate-200 hover:text-cyan-300">← Back to Blog</Link>
         
         <div className="flex items-center gap-3">
-          {/* Sign out button
-          {user && (
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-full transition-colors"
-              title="Sign out"
-            >
-              <FaSignOutAlt className="w-3 h-3" />
-              Sign Out
-            </button>
-          )}
-           */}
-          {/* Like button */}
           <button
             onClick={handleLike}
             disabled={!user}

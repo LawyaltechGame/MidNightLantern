@@ -319,8 +319,51 @@ const CommentSection = ({ postSlug }: CommentSectionProps) => {
 
   const formatTime = (timestamp: Timestamp | null) => {
     if (!timestamp) return "Just now";
+    
+    const now = new Date();
     const date = timestamp.toDate();
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
+
+    // If it's today, show time
+    if (diffInDays === 0) {
+      return date.toLocaleTimeString([], { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    
+    // If it's yesterday or within a few days
+    if (diffInDays === 1) {
+      return "1 day ago";
+    } else if (diffInDays < 7) {
+      return `${diffInDays} days ago`;
+    }
+    
+    // If it's within weeks
+    if (diffInWeeks === 1) {
+      return "1 week ago";
+    } else if (diffInWeeks < 4) {
+      return `${diffInWeeks} weeks ago`;
+    }
+    
+    // If it's within months
+    if (diffInMonths === 1) {
+      return "1 month ago";
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths} months ago`;
+    }
+    
+    // If it's years
+    if (diffInYears === 1) {
+      return "1 year ago";
+    } else {
+      return `${diffInYears} years ago`;
+    }
   };
 
   const toggleRepliesExpanded = (commentId: string) => {

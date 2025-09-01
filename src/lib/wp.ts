@@ -1,6 +1,14 @@
 export const WP_BASE = "https://games.lawyaltech.org";
 
 export type WpMedia = { source_url?: string; alt_text?: string };
+export type WpAuthor = {
+  id: number;
+  name: string;
+  description?: string;
+  url?: string;
+  slug: string;
+  avatar_urls?: { [key: string]: string };
+};
 export type WpPost = {
   id: number;
   date: string;
@@ -11,6 +19,7 @@ export type WpPost = {
   content: { rendered: string };
   _embedded?: {
     ["wp:featuredmedia"]?: WpMedia[];
+    author?: WpAuthor[];
   };
 };
 
