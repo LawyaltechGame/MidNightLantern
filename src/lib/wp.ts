@@ -1,4 +1,4 @@
-export const WP_BASE = "https://games.lawyaltech.org";
+export const WP_BASE = "https://test.lawyaltech.org";
 
 export type WpMedia = { source_url?: string; alt_text?: string };
 export type WpAuthor = {
