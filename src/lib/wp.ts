@@ -72,4 +72,30 @@ export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
 }
 
+// Fetch full author object by id. Useful when _embed author lacks description
+export async function fetchAuthorById(authorId: number, authorSlug?: string): Promise<WpAuthor | null> {
+  if (!authorId && authorId !== 0) return null;
+  // Try direct users endpoint first
+  try {
+    const byIdUrl = `${WP_BASE}/wp-json/wp/v2/users/${authorId}?_fields=id,name,description,slug,avatar_urls`;
+    const res = await fetch(byIdUrl);
+    if (res.ok) {
+      const author = (await res.json()) as WpAuthor;
+      return author || null;
+    }
+  } catch (_) {}
+  // Fallback: some sites block /users/{id}. Try query by slug
+  if (authorSlug) {
+    try {
+      const bySlugUrl = `${WP_BASE}/wp-json/wp/v2/users?slug=${encodeURIComponent(authorSlug)}&_fields=id,name,description,slug,avatar_urls`;
+      const res2 = await fetch(bySlugUrl);
+      if (res2.ok) {
+        const arr = (await res2.json()) as WpAuthor[];
+        return arr?.[0] || null;
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
 

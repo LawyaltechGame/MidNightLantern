@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchPostBySlug, getFeaturedImage, formatDate } from "../lib/wp";
+import { fetchPostBySlug, getFeaturedImage, formatDate, fetchAuthorById, type WpAuthor } from "../lib/wp";
 import CommentSection from "../components/CommentSection";
 import type { WpPost } from "../lib/wp";
 import { FaThumbsUp } from "react-icons/fa";
@@ -16,6 +16,7 @@ const BlogDetailPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [likes, setLikes] = useState(0);
   const [userReaction, setUserReaction] = useState<'like' | null>(null);
+  const [fullAuthor, setFullAuthor] = useState<WpAuthor | null>(null);
 
   // Authentication effect
   useEffect(() => {
@@ -35,6 +36,29 @@ const BlogDetailPage = () => {
       .finally(() => { if (isMounted) setLoading(false); });
     return () => { isMounted = false };
   }, [slug]);
+
+  // Fetch full author details if description missing in embedded data
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAuthor() {
+      if (!post) { setFullAuthor(null); return; }
+      const embeddedAuthor = post._embedded?.author?.[0];
+      if (embeddedAuthor?.description) { setFullAuthor(embeddedAuthor); return; }
+      if (embeddedAuthor?.id != null) {
+        const fetched = await fetchAuthorById(embeddedAuthor.id, embeddedAuthor.slug).catch(() => null);
+        if (isMounted) {
+          if (!fetched?.description) {
+            console.warn("Author description not available from WP API", { embeddedAuthor, fetched });
+          }
+          setFullAuthor(fetched);
+        }
+      } else {
+        setFullAuthor(null);
+      }
+    }
+    loadAuthor();
+    return () => { isMounted = false };
+  }, [post]);
 
   // Load reactions for the current post
   useEffect(() => {
@@ -131,22 +155,26 @@ const BlogDetailPage = () => {
 
 
 {/* Author bio section */}
-{post._embedded?.author?.[0] && (
+{(post._embedded?.author?.[0] || fullAuthor) && (
   <div className="mt-12 flex items-start gap-4 p-6 bg-slate-900/40 rounded-2xl border border-white/10">
-    <img
-      src={post._embedded.author[0].avatar_urls?.["96"]}
-      alt={post._embedded.author[0].name}
-      className="w-16 h-16 rounded-full border border-slate-700 object-cover"
-    />
+    {(() => { const a = fullAuthor || post._embedded!.author![0]; return (
+      <img
+        src={a.avatar_urls?.["96"]}
+        alt={a.name}
+        className="w-16 h-16 rounded-full border border-slate-700 object-cover"
+      />
+    )})()}
     <div>
-      <h3 className="text-lg font-semibold text-slate-100">
-        {post._embedded.author[0].name}
-      </h3>
-      {post._embedded.author[0].description && (
-        <p className="text-sm text-slate-400 mt-1">
-          {post._embedded.author[0].description}
-        </p>
-      )}
+      {(() => { const a = fullAuthor || post._embedded!.author![0]; const bio = a?.description?.trim(); return (
+        <>
+          <h3 className="text-lg font-semibold text-slate-100">{a.name}</h3>
+          {bio ? (
+            <p className="text-sm text-slate-400 mt-1">{bio}</p>
+          ) : (
+            <p className="text-sm text-slate-500 mt-1 italic">Author bio not available.</p>
+          )}
+        </>
+      )})()}
     </div>
   </div>
 )}
