@@ -53,7 +53,7 @@ const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReaction
       ) : null })()}
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-black/60" />
       <div className="relative z-10 h-full p-6 flex items-end">
-        <span className="text-5xl drop-shadow-[0_0_12px_rgba(0,0,12px_rgba(0,0,0,0.6)]">🕹️</span>
+        {/* <span className="text-5xl drop-shadow-[0_0_12px_rgba(0,0,12px_rgba(0,0,0,0.6)]">🕹️</span> */}
       </div>
     </div>
     <div className="p-6">
