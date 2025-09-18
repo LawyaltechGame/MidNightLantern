@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchPostBySlug, getFeaturedImage, formatDate, fetchAuthorById, type WpAuthor } from "../lib/wp";
+import { fetchPostBySlug, getFeaturedImage, formatDate, fetchAuthorById, normalizeWpHtml, type WpAuthor } from "../lib/wp";
 import CommentSection from "../components/CommentSection";
 import type { WpPost } from "../lib/wp";
 import { FaThumbsUp } from "react-icons/fa";
@@ -150,7 +150,7 @@ const BlogDetailPage = () => {
              prose-strong:text-slate-100 prose-em:text-slate-200
              prose-li:marker:text-slate-400 prose-ul:my-4 prose-ol:my-4
              prose-img:rounded-xl prose-img:shadow-lg prose-blockquote:border-l-slate-600 prose-blockquote:text-slate-300"
-  dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+  dangerouslySetInnerHTML={{ __html: normalizeWpHtml(post.content.rendered) }}
 />
 
 

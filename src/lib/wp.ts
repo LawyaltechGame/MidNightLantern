@@ -33,10 +33,19 @@ export function getFeaturedImage(p: WpPost): { src: string; alt: string } {
   if (!src) {
     // Fallback: find first image in content HTML
     const html = p?.content?.rendered || "";
-    const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-    if (match && match[1]) {
-      src = match[1];
-    }
+    // Prefer non-blob http(s) or site-relative urls
+    const imgTag = html.match(/<img[^>]*>/i)?.[0] || "";
+    const candidates: string[] = [];
+    const pushAttr = (attr: string) => {
+      const m = imgTag.match(new RegExp(`${attr}=["']([^"']+)["']`, "i"));
+      if (m && m[1]) candidates.push(m[1]);
+    };
+    pushAttr("data-orig-file");
+    pushAttr("data-large-file");
+    pushAttr("data-src");
+    pushAttr("data-lazy-src");
+    pushAttr("src");
+    src = candidates.find((u) => u && !u.startsWith("blob:")) || "";
   }
 
   if (!src) {
@@ -70,6 +79,65 @@ export async function fetchPostBySlug(slug: string): Promise<WpPost | null> {
 
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+}
+
+// Normalize WP HTML so inline images render correctly in React without WP's JS
+// - Promote data-src/data-lazy-src to src
+// - Convert protocol-relative URLs (//example.com) to https
+// - Ensure site-relative URLs (/wp-content/...) are absolute
+export function normalizeWpHtml(html: string): string {
+  if (!html) return html;
+
+  let out = html;
+
+  // Replace any <img> that has a blob: src with a better candidate from data attributes
+  out = out.replace(/<img([^>]*)>/gi, (full, attrs) => {
+    const getAttr = (name: string) => {
+      const m = String(attrs).match(new RegExp(`${name}=["']([^"']+)["']`, "i"));
+      return m ? m[1] : "";
+    };
+    const hasBlobSrc = /^blob:/i.test(getAttr("src"));
+    if (!hasBlobSrc) return full;
+    const candidates = [
+      getAttr("data-orig-file"),
+      getAttr("data-large-file"),
+      getAttr("data-src"),
+      getAttr("data-lazy-src"),
+      getAttr("srcset")?.split(/[,\s]+/)[0] || ""
+    ].filter(Boolean) as string[];
+    const replacement = candidates.find((u) => u && !/^blob:/i.test(u)) || "";
+    if (!replacement) return full.replace(/\ssrc=["'][^"']+["']/i, "");
+    return `<img${String(attrs).replace(/\ssrc=["'][^"']+["']/i, "")} src="${replacement}">`;
+  });
+
+  // Promote common lazy-load attributes to src
+  // data-src, data-lazy-src, data-original
+  out = out.replace(/<img([^>]*?)\s(?:data-src|data-lazy-src|data-original)=["']([^"']+)["']([^>]*)>/gi, (_m, pre, url, post) => {
+    // If an existing src exists later in the tag, remove it to avoid duplicates
+    const cleanedPre = String(pre).replace(/\s(src)=["'][^"']+["']/i, " ");
+    const cleanedPost = String(post).replace(/\s(src)=["'][^"']+["']/i, " ");
+    return `<img${cleanedPre} src="${url}"${cleanedPost}>`;
+  });
+
+  // Remove blob: entries inside srcset
+  out = out.replace(/\ssrcset=["']([^"']+)["']/gi, (_m, list) => {
+    const filtered = String(list)
+      .split(",")
+      .map((s) => s.trim())
+      .filter((entry) => entry && !/^blob:/i.test(entry))
+      .join(", ");
+    return filtered ? ` srcset="${filtered}"` : "";
+  });
+
+  // Ensure protocol-relative URLs use https
+  out = out.replace(/\s(src|href)=["']\/\/([^"']+)["']/gi, (_m, attr, rest) => ` ${attr}="https://${rest}"`);
+
+  // Ensure site-relative URLs are absolute against WP_BASE
+  // Matches src="/wp-content/..." or href="/wp-content/..."
+  const wpBase = WP_BASE.replace(/\/$/, "");
+  out = out.replace(/\s(src|href)=["'](\/wp-content\/[^"']+)["']/gi, (_m, attr, path) => ` ${attr}="${wpBase}${path}"`);
+
+  return out;
 }
 
 // Fetch full author object by id. Useful when _embed author lacks description
