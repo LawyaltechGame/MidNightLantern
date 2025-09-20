@@ -74,7 +74,7 @@ const ServiceCard = ({ service, index }: { service: Service; index: number }) =>
         </p>
 
         <ul className="space-y-2 text-left text-slate-300/90 flex-grow mb-6">
-          {service.points.map((point, pointIndex) => (
+          {service.points.map((point) => (
             <li 
               key={point} 
               className="flex items-start gap-2"
