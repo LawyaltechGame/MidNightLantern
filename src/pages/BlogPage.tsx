@@ -49,7 +49,7 @@ const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReaction
   >
     <div className="relative h-56">
       {(() => { const f = getFeaturedImage(post); return f.src ? (
-        <img src={f.src} alt={f.alt} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={f.src} alt={f.alt} width={1200} height={672} loading="lazy" decoding="async" sizes="(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw" className="absolute inset-0 h-full w-full object-cover" />
       ) : null })()}
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-black/60" />
       <div className="relative z-10 h-full p-6 flex items-end">
@@ -76,11 +76,11 @@ const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReaction
     )}
   </div>
 </div>
-      <h3 className="mt-3 text-xl font-extrabold leading-tight tracking-wide text-slate-100" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-      <div className="mt-3 text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
+      <h3 className="mt-3 text-xl font-extrabold leading-tight tracking-wide text-slate-100 min-h-[28px] md:min-h-[32px]" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+      <div className="mt-3 text-sm text-slate-300 min-h-[60px] md:min-h-[72px]" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
       
       {/* Like Section */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between min-h-[36px]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => user ? onLike(post.id) : null}

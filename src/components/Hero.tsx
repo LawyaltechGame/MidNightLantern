@@ -18,21 +18,26 @@ const Hero = () => {
       <div className="text-center">
         <motion.div
           className="flex justify-center"
-          initial={{ y: 30, opacity: 0, scale: 0.98 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
         >
           <img
             src="/Logo For GameForge.jpeg"
             alt="Midnight Lantern logo"
+            width={800}
+            height={250}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             className="w-[520px] md:w-[800px] h-[110px] md:h-[250px]   max-w-full object-contain drop-shadow-[0_0_18px_rgba(56,189,248,0.45)]"
           />
         </motion.div>
 
         <motion.p
           className="mx-auto mt-6 max-w-3xl text-base text-slate-300 md:text-lg"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.6 }}
         >
           Crafting epic gaming experiences with immersive worlds, cinematic visuals, and
@@ -41,8 +46,8 @@ const Hero = () => {
 
         <motion.div
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.6 }}
         >
           <PillButton>View Our Work</PillButton>

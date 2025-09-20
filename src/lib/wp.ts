@@ -137,6 +137,33 @@ export function normalizeWpHtml(html: string): string {
   const wpBase = WP_BASE.replace(/\/$/, "");
   out = out.replace(/\s(src|href)=["'](\/wp-content\/[^"']+)["']/gi, (_m, attr, path) => ` ${attr}="${wpBase}${path}"`);
 
+  // Add width/height when available from data-orig-size="WxH" and add sizes for responsiveness
+  out = out.replace(/<img([^>]*)>/gi, (full, attrs) => {
+    const get = (n: string) => {
+      const m = String(attrs).match(new RegExp(`${n}=["']([^"']+)["']`, "i"));
+      return m ? m[1] : "";
+    };
+    let width = get('width');
+    let height = get('height');
+    const orig = get('data-orig-size'); // e.g., 1200,800 or 1200x800
+    if ((!width || !height) && orig) {
+      const parts = orig.split(/[x,]/);
+      if (parts.length >= 2) {
+        width = width || parts[0];
+        height = height || parts[1];
+      }
+    }
+    const hasSizes = /\ssizes=/.test(attrs);
+    const sizes = hasSizes ? '' : ' sizes="(min-width: 1024px) 768px, 100vw"';
+    const loading = /\sloading=/.test(attrs) ? '' : ' loading="lazy"';
+    const decoding = /\sdecoding=/.test(attrs) ? '' : ' decoding="async"';
+    let replaced = full;
+    if (!/\swidth=/.test(attrs) && width) replaced = replaced.replace('<img', `<img width="${width}"`);
+    if (!/\sheight=/.test(attrs) && height) replaced = replaced.replace('<img', `<img height="${height}"`);
+    replaced = replaced.replace('<img', `<img${sizes}${loading}${decoding}`);
+    return replaced;
+  });
+
   return out;
 }
 

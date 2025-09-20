@@ -1,42 +1,42 @@
 const projects = [
   {
     title: "Project Cubes",
-    image: "/public/cubes.png", // TODO: replace with your image path
+    image: "/cubes.png", // served from public/
     description:
       "Cubes is 2d game in which your aim is to  collect points and get a Highscore ,but it's not as simple as it looks, there are some coins which give you points but some ends your game when you collide with them, same is the case  with obstacles, some ends your game while some gives you points. So try to  get a good  Highscore and Enjoy. ",
     downloadUrl: "https://imperfect-wizard.itch.io/cubes", // TODO: replace
   },
   {
     title: "colorbump-clone",
-    image: "/public/colorbump.png",
+    image: "/colorbump.png",
     description:
       "A clone of Color Bump 3D game. Avoid the obstacles of other color and reach the finish line.",
     downloadUrl: "https://imperfect-wizard.itch.io/color-bumpclone",
   },
   {
     title: "Mirror World",
-    image: "/public/mirrorworld.png",
+    image: "/mirrorworld.png",
     description:
       "Mirror World is Hyper casual game in which you have to control two balls which are in opposite worlds(Mirror images of each other) , try to control them together avoiding the obstacles.",
     downloadUrl: "https://imperfect-wizard.itch.io/mirror-world",
   },
   {
     title: "Pixelate shader",
-    image: "/public/pixelateproject.png",
+    image: "/pixelateproject.png",
     description:
       "This is a simple 2D shader to convert a 2D image to pixel image and add old cartoon style movement to image",
     downloadUrl: "https://imperfect-wizard.itch.io/2d-pixelate-shader",
   },
   {
     title: "Rider Santa",
-    image: "/public/ridersanta.png",
+    image: "/ridersanta.png",
     description:
       "The Santa is in town to deliver presents, make sure he does it on time, you have to drive Santa to the destination before the fuel runs out!!. Use arrow keys right and left to control the vehicle. ",
     downloadUrl: "https://imperfect-wizard.itch.io/rider-santa",
   },
   {
     title: "An Unordinary Place",
-    image: "/public/unordinaryproject.png",
+    image: "/unordinaryproject.png",
     description:
       "An Unordinary Place is a 2D puzzle game designed to demonstrate our expertise in creating engaging and immersive gameplay experiences. The game challenges players to navigate a unique world by solving puzzles and overcoming obstacles, while atmospheric background music enhances player immersion. With a focus on clean visuals, intuitive mechanics, and polished audio integration, this project highlights our ability to deliver complete end-to-end game development solutions.",
     downloadUrl: "https://imperfect-wizard.itch.io/an-unordinary-place",
@@ -52,7 +52,7 @@ const PortfolioPage = () => {
       </p>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {projects.map((p) => (
+        {projects.map((p, i) => (
           <a
             key={p.title}
             href={p.downloadUrl}
@@ -69,8 +69,13 @@ const PortfolioPage = () => {
               <img
                 src={p.image}
                 alt={`${p.title} cover`}
+                width={1280}
+                height={720}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03] opacity-90 group-hover:opacity-100"
-                loading="lazy"
+                loading={i < 3 ? "eager" : "lazy"}
+                fetchPriority={i < 3 ? "high" : undefined}
+                decoding="async"
+                sizes="(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-slate-950/10 to-transparent" />
             </div>

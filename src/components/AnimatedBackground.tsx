@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 
 type Dot = { 
   id: number; 
@@ -21,27 +21,31 @@ type Connection = {
   distance: number;
 };
 
-const generateDots = (count: number): Dot[] => {
+// Balanced particle count for visual impact while maintaining performance
+const generateDots = (count: number = 24): Dot[] => {
   const dots: Dot[] = [];
   for (let i = 0; i < count; i += 1) {
     dots.push({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 4 + 2,
-      hue: Math.floor(160 + Math.random() * 200), // Gaming colors: cyan to magenta
-      delay: Math.random() * 4,
-      speed: 0.5 + Math.random() * 2,
-      amplitude: 15 + Math.random() * 25,
+      size: Math.random() * 3.5 + 2, // Slightly larger for visibility
+      hue: Math.floor(160 + Math.random() * 200),
+      delay: Math.random() * 3, // Reduced delay range
+      speed: 0.3 + Math.random() * 1.2, // Slower animations
+      amplitude: 12 + Math.random() * 18, // Balanced movement
     });
   }
   return dots;
 };
 
-const findConnections = (dots: Dot[], maxDistance: number = 32): Connection[] => {
+// Optimized connection finding with smart limits
+const findConnections = (dots: Dot[], maxDistance: number = 28): Connection[] => {
   const connections: Connection[] = [];
-  for (let i = 0; i < dots.length; i++) {
-    for (let j = i + 1; j < dots.length; j++) {
+  const maxConnections = 45; // Increased for better visual density
+  
+  for (let i = 0; i < dots.length && connections.length < maxConnections; i++) {
+    for (let j = i + 1; j < dots.length && connections.length < maxConnections; j++) {
       const dx = dots[i].x - dots[j].x;
       const dy = dots[i].y - dots[j].y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -62,60 +66,133 @@ const findConnections = (dots: Dot[], maxDistance: number = 32): Connection[] =>
 };
 
 const AnimatedBackground = () => {
-  const dots = useMemo(() => generateDots(35), []);
+  const dots = useMemo(() => generateDots(), []);
   const connections = useMemo(() => findConnections(dots), [dots]);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [isHovering, setIsHovering] = useState(false);
   const [pulseIntensity, setPulseIntensity] = useState(0);
+  const [enabled, setEnabled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  // Performance optimizations
+  const rafIdRef = useRef<number>(0);
+  const lastUpdateRef = useRef(0);
+  const UPDATE_INTERVAL = 32; // ~30fps instead of 60fps
 
+  // Intersection Observer for visibility optimization
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    const element = document.body; // Or specific container
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Defer mounting with longer delay for better LCP
+  useEffect(() => {
+    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: any) => number);
+    let id: number | undefined;
+    
+    if (typeof idle === 'function') {
+      id = idle(() => setEnabled(true), { timeout: 500 });
+    } else {
+      const t = setTimeout(() => setEnabled(true), 400);
+      return () => clearTimeout(t);
+    }
+    return () => { if (id != null) (window as any).cancelIdleCallback?.(id); };
+  }, []);
+
+  // Throttled mouse movement handler
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    const now = Date.now();
+    if (now - lastUpdateRef.current < UPDATE_INTERVAL) return;
+    
+    cancelAnimationFrame(rafIdRef.current);
+    rafIdRef.current = requestAnimationFrame(() => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
       setMousePos({ x, y });
-    };
+      lastUpdateRef.current = now;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible || !enabled) return;
 
     const handleMouseEnter = () => setIsHovering(true);
     const handleMouseLeave = () => setIsHovering(false);
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseenter', handleMouseEnter);
-    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('mouseenter', handleMouseEnter, { passive: true } as any);
+    document.addEventListener('mouseleave', handleMouseLeave, { passive: true } as any);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseenter', handleMouseEnter);
-      document.removeEventListener('mouseleave', handleMouseLeave);
+      cancelAnimationFrame(rafIdRef.current);
+      document.removeEventListener('mousemove', handleMouseMove as any);
+      document.removeEventListener('mouseenter', handleMouseEnter as any);
+      document.removeEventListener('mouseleave', handleMouseLeave as any);
     };
-  }, []);
+  }, [handleMouseMove, isVisible, enabled]);
 
+  // Slower pulse for better performance
   useEffect(() => {
+    if (!isVisible) return;
+    
     const interval = setInterval(() => {
-      setPulseIntensity(prev => (prev + 1) % 100);
-    }, 120);
+      setPulseIntensity(prev => (prev + 1) % 80);
+    }, 200); // Slower pulse
     return () => clearInterval(interval);
-  }, []);
+  }, [isVisible]);
+
+  // Early return with minimal static background
+  if (!enabled || !isVisible) {
+    return (
+      <div 
+        className="pointer-events-none absolute inset-0 bg-slate-950"
+        style={{ willChange: 'auto' }} // Remove will-change when not animating
+      />
+    );
+  }
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden bg-slate-950">
-      {/* Dynamic gradient backdrop with gaming colors */}
+    <div 
+      className="pointer-events-none absolute inset-0 overflow-hidden bg-slate-950"
+      style={{ 
+        willChange: 'transform',
+        transform: 'translateZ(0)', // Force hardware acceleration
+        backfaceVisibility: 'hidden' // Optimize rendering
+      }}
+    >
+      {/* Simplified gradient backdrop */}
       <div 
-        className="absolute inset-0 transition-all duration-300"
+        className="absolute inset-0 transition-all duration-500 ease-out"
         style={{
           background: `
-            radial-gradient(1400px_700px_at_${mousePos.x}%_${mousePos.y - 20}%,rgba(0,255,255,${isHovering ? 0.4 : 0.25}),transparent),
-            radial-gradient(1000px_500px_at_${80 + mousePos.x * 0.2}%_${10 + mousePos.y * 0.1}%,rgba(255,0,255,${isHovering ? 0.35 : 0.2}),transparent),
-            radial-gradient(1200px_600px_at_${10 + mousePos.x * 0.1}%_${30 + mousePos.y * 0.15}%,rgba(0,255,100,${isHovering ? 0.3 : 0.15}),transparent),
-            linear-gradient(45deg, rgba(20,20,40,0.8), rgba(5,5,15,0.9))
-          `
+            radial-gradient(1200px_600px_at_${mousePos.x}%_${mousePos.y - 15}%,rgba(0,255,255,${isHovering ? 0.3 : 0.18}),transparent),
+            radial-gradient(800px_400px_at_${75 + mousePos.x * 0.15}%_${15 + mousePos.y * 0.1}%,rgba(255,0,255,${isHovering ? 0.25 : 0.15}),transparent),
+            linear-gradient(45deg, rgba(20,20,40,0.7), rgba(5,5,15,0.8))
+          `,
+          willChange: 'background'
         }}
       />
 
-      {/* Neural network connections */}
-      <svg className="absolute inset-0 w-full h-full">
-        {connections.map((connection) => {
-          const opacity = Math.max(0, (25 - connection.distance) / 25) * 0.4;
-          const pulse = Math.sin((pulseIntensity + connection.distance) * 0.1) * 0.2 + 0.8;
+      {/* Optimized neural network connections */}
+      <svg 
+        className="absolute inset-0 w-full h-full"
+        style={{ 
+          shapeRendering: 'optimizeSpeed',
+          willChange: 'transform'
+        }}
+      >
+        {connections.slice(0, 35).map((connection) => { // Render more connections for depth
+          const opacity = Math.max(0, (25 - connection.distance) / 25) * 0.35;
+          const pulse = Math.sin((pulseIntensity + connection.distance) * 0.08) * 0.15 + 0.7;
           
           return (
             <motion.line
@@ -125,31 +202,32 @@ const AnimatedBackground = () => {
               x2={`${connection.x2}%`}
               y2={`${connection.y2}%`}
               stroke="url(#connectionGradient)"
-              strokeWidth={isHovering ? 0.8 : 0.5}
-              opacity={opacity * pulse * (isHovering ? 1.5 : 1)}
+              strokeWidth={isHovering ? 0.6 : 0.4}
+              opacity={opacity * pulse * (isHovering ? 1.3 : 1)}
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              transition={{ duration: 3, ease: "easeOut" }}
+              style={{ vectorEffect: 'non-scaling-stroke' }}
             />
           );
         })}
         
         <defs>
           <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(0,255,255,0.6)" />
-            <stop offset="50%" stopColor="rgba(255,0,255,0.8)" />
-            <stop offset="100%" stopColor="rgba(0,255,100,0.6)" />
+            <stop offset="0%" stopColor="rgba(0,255,255,0.5)" />
+            <stop offset="50%" stopColor="rgba(255,0,255,0.6)" />
+            <stop offset="100%" stopColor="rgba(0,255,100,0.5)" />
           </linearGradient>
         </defs>
       </svg>
 
-      {/* Enhanced floating particles */}
+      {/* Performance-optimized floating particles */}
       {dots.map((dot) => {
         const distanceToMouse = Math.sqrt(
           Math.pow(dot.x - mousePos.x, 2) + Math.pow(dot.y - mousePos.y, 2)
         );
-        const mouseInfluence = Math.max(0, (30 - distanceToMouse) / 30);
-        const glowIntensity = 0.4 + mouseInfluence * 0.6;
+        const mouseInfluence = Math.max(0, (28 - distanceToMouse) / 28);
+        const glowIntensity = 0.35 + mouseInfluence * 0.45;
         
         return (
           <motion.div
@@ -158,98 +236,104 @@ const AnimatedBackground = () => {
             style={{
               top: `${dot.y}%`,
               left: `${dot.x}%`,
-              width: dot.size + mouseInfluence * 3,
-              height: dot.size + mouseInfluence * 3,
-              background: `hsl(${dot.hue + mouseInfluence * 60} 100% ${60 + mouseInfluence * 20}%)`,
+              width: dot.size + mouseInfluence * 2.5,
+              height: dot.size + mouseInfluence * 2.5,
+              background: `hsl(${dot.hue + mouseInfluence * 40} 90% ${55 + mouseInfluence * 15}%)`,
               boxShadow: `
-                0 0 ${8 + glowIntensity * 12}px ${2 + glowIntensity * 4}px hsla(${dot.hue}, 100%, 60%, ${glowIntensity}),
-                0 0 ${16 + glowIntensity * 24}px ${4 + glowIntensity * 8}px hsla(${dot.hue}, 100%, 70%, ${glowIntensity * 0.3})
+                0 0 ${6 + glowIntensity * 8}px ${1 + glowIntensity * 3}px hsla(${dot.hue}, 90%, 55%, ${glowIntensity}),
+                0 0 ${12 + glowIntensity * 16}px ${3 + glowIntensity * 6}px hsla(${dot.hue}, 90%, 65%, ${glowIntensity * 0.2})
               `,
-              filter: `blur(${0.5 - mouseInfluence * 0.3}px) brightness(${1 + mouseInfluence * 0.5})`,
+              willChange: 'transform',
+              transform: 'translateZ(0)', // Hardware acceleration
             }}
-            initial={{ y: 0, opacity: 0.6, scale: 0.8 }}
+            initial={{ y: 0, opacity: 0.55, scale: 0.75 }}
             animate={{ 
               y: [
                 -dot.amplitude, 
-                dot.amplitude * (1 + mouseInfluence), 
+                dot.amplitude * (1 + mouseInfluence * 0.5), 
                 -dot.amplitude
               ],
               opacity: [
-                0.4 + mouseInfluence * 0.3, 
-                0.8 + mouseInfluence * 0.2, 
-                0.4 + mouseInfluence * 0.3
+                0.35 + mouseInfluence * 0.25, 
+                0.65 + mouseInfluence * 0.2, 
+                0.35 + mouseInfluence * 0.25
               ],
               scale: [
-                0.8 + mouseInfluence * 0.4,
-                1.2 + mouseInfluence * 0.6,
-                0.8 + mouseInfluence * 0.4
+                0.75 + mouseInfluence * 0.35,
+                1.1 + mouseInfluence * 0.45,
+                0.75 + mouseInfluence * 0.35
               ],
-              rotate: [0, 180, 360]
             }}
             transition={{ 
-              duration: 6 + dot.speed + mouseInfluence * 2, 
+              duration: 8 + dot.speed + mouseInfluence * 1.5, 
               repeat: Infinity, 
               ease: "easeInOut", 
-              delay: dot.delay 
+              delay: dot.delay,
+              repeatType: "reverse" // More efficient than full rotation
             }}
           />
         );
       })}
 
-      {/* Mouse cursor glow effect */}
-      <motion.div
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          left: `${mousePos.x}%`,
-          top: `${mousePos.y}%`,
-          transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(circle, rgba(0,255,255,0.3) 0%, rgba(255,0,255,0.2) 50%, transparent 100%)',
-          filter: 'blur(4px)',
-        }}
-        animate={{
-          width: isHovering ? [60, 80, 60] : [0, 0, 0],
-          height: isHovering ? [60, 80, 60] : [0, 0, 0],
-          opacity: isHovering ? [0.2, 0.4, 0.2] : [0, 0, 0],
-        }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      />
+      {/* Simplified mouse cursor effect */}
+      {isHovering && (
+        <motion.div
+          className="absolute pointer-events-none rounded-full"
+          style={{
+            left: `${mousePos.x}%`,
+            top: `${mousePos.y}%`,
+            transform: 'translate(-50%, -50%) translateZ(0)',
+            background: 'radial-gradient(circle, rgba(0,255,255,0.2) 0%, rgba(255,0,255,0.15) 50%, transparent 100%)',
+            filter: 'blur(3px)',
+            willChange: 'transform, opacity',
+          }}
+          animate={{
+            width: [40, 60, 40],
+            height: [40, 60, 40],
+            opacity: [0.15, 0.3, 0.15],
+          }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
 
-      {/* Enhanced scanlines with gaming effect */}
+      {/* Simplified scanlines */}
       <div 
-        className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(0,255,255,0.02)_0px,rgba(0,255,255,0.02)_1px,transparent_1px,transparent_4px)]"
+        className="absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(0,255,255,0.015)_0px,rgba(0,255,255,0.015)_1px,transparent_1px,transparent_5px)]"
         style={{
-          opacity: isHovering ? 0.15 : 0.08,
-          transition: 'opacity 0.3s ease'
+          opacity: isHovering ? 0.1 : 0.05,
+          transition: 'opacity 0.4s ease',
+          willChange: 'opacity'
         }}
       />
 
-      {/* Matrix-like digital rain effect */}
-      <div className="absolute inset-0 opacity-5">
-        {Array.from({ length: 12 }).map((_, i) => (
+      {/* Enhanced digital rain effect for better ambiance */}
+      <div className="absolute inset-0 opacity-4">
+        {Array.from({ length: 8 }).map((_, i) => ( // Increased from 6 to 8
           <motion.div
             key={`rain-${i}`}
             className="absolute w-px bg-gradient-to-b from-transparent via-cyan-400 to-transparent"
             style={{
-              left: `${(i * 5 + Math.random() * 3)}%`,
-              height: '100px',
+              left: `${(i * 8 + Math.random() * 4)}%`,
+              height: '80px', // Smaller rain drops
+              willChange: 'transform',
             }}
-            initial={{ y: '-100px', opacity: 0 }}
+            initial={{ y: '-80px', opacity: 0 }}
             animate={{ 
-              y: 'calc(100vh + 100px)', 
-              opacity: [0, 0.3, 0.3, 0] 
+              y: 'calc(100vh + 80px)', 
+              opacity: [0, 0.2, 0.2, 0] 
             }}
             transition={{
-              duration: 3 + Math.random() * 4,
+              duration: 4 + Math.random() * 3, // Slower
               repeat: Infinity,
-              delay: Math.random() * 5,
+              delay: Math.random() * 6,
               ease: "linear"
             }}
           />
         ))}
       </div>
 
-      {/* Vignette overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.7)_100%)]" />
+      {/* Simplified vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.6)_100%)]" />
     </div>
   );
 };
