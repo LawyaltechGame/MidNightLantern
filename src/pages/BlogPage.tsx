@@ -8,6 +8,42 @@ import { auth, db } from "../lib/firebase";
 import { doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged, type User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 
+// Helper function to clean excerpt text
+const cleanExcerpt = (excerpt: string, title?: string): string => {
+  let cleaned = excerpt
+    .replace(/(\s*Read More\s*[»›→]?\s*)+$/gi, '') // Remove "Read More" at end
+    .replace(/(\s*Read More\s*[»›→]?\s*)/gi, '') // Remove "Read More" anywhere
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  // Remove the title if it appears at the end of the excerpt
+  if (title) {
+    // Strip HTML tags from title for comparison
+    const cleanTitle = title.replace(/<[^>]*>/g, '').trim();
+    
+    // Try multiple patterns to catch the title
+    const patterns = [
+      new RegExp(`\\s*${cleanTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[»›→]?\\s*$`, 'gi'),
+      new RegExp(`\\s*${cleanTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'gi'),
+      new RegExp(`\\s*${cleanTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[»›→]?`, 'gi'),
+    ];
+    
+    patterns.forEach(pattern => {
+      cleaned = cleaned.replace(pattern, '');
+    });
+  }
+  
+  // Remove any remaining title-like patterns at the end
+  cleaned = cleaned.replace(/\s*[A-Za-z\s:]+[»›→]?\s*$/, '');
+  
+  // Ensure it ends with ... if it was truncated
+  if (cleaned.length > 0 && !cleaned.endsWith('...')) {
+    cleaned = cleaned.trim();
+  }
+  
+  return cleaned;
+};
+
 const PageTitle = () => (
   <div className="mb-8 text-center">
     <h1 className="text-[40px] font-extrabold tracking-widest md:text-[64px]">
@@ -77,7 +113,7 @@ const BlogCard = ({ post, index, user, onLike, likes, userReaction, postReaction
   </div>
 </div>
       <h3 className="mt-3 text-xl font-extrabold leading-tight tracking-wide text-slate-100 min-h-[28px] md:min-h-[32px]" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-      <div className="mt-3 text-sm text-slate-300 min-h-[60px] md:min-h-[72px]" dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
+      <div className="mt-3 text-sm text-slate-300 min-h-[60px] md:min-h-[72px]" dangerouslySetInnerHTML={{ __html: cleanExcerpt(post.excerpt.rendered, post.title.rendered) }} />
       
       {/* Like Section */}
       <div className="mt-4 flex items-center justify-between min-h-[36px]">
