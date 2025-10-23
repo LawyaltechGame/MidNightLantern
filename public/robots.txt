@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://midnightlantern.com/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Block admin areas (if any)
+Disallow: /admin/
+Disallow: /wp-admin/
+Disallow: /private/
+
+# Allow all other content
+Allow: /blog/
+Allow: /portfolio/
+Allow: /services/
+Allow: /clients/

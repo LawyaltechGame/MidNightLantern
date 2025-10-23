@@ -24,7 +24,7 @@ const Hero = () => {
         >
           <img
             src="/Logo For GameForge.jpeg"
-            alt="Midnight Lantern logo"
+            alt="Midnight Lantern - Premier Game Development Studio Logo"
             width={800}
             height={250}
             loading="eager"

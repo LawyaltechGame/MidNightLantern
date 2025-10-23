@@ -246,7 +246,7 @@ const BlogDetailPage = () => {
   }
 
   return (
-    <div 
+    <article 
       className="mx-auto max-w-3xl px-4 py-12"
       style={{
         contentVisibility: 'auto',
